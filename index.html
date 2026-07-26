@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+            font-size: 28px;
+        }
+
+        .timer-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .progress-ring-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin-bottom: 30px;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring {
+            stroke-dasharray: 565.48;
+            stroke-dashoffset: 0;
+            stroke: #667eea;
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        .progress-bg {
+            stroke: #eee;
+            fill: none;
+            stroke-width: 12;
+        }
+
+        .time-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .phase-label {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .task-section {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .task-section h2 {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .task-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .task-item:hover {
+            background: #f0f0f0;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .task-text {
+            flex: 1;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            transition: color 0.3s;
+        }
+
+        .btn-delete:hover {
+            color: #e74c3c;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
+
+        .task-list {
+            scrollbar-width: thin;
+            scrollbar-color: #ddd transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Focus Flow</h1>
+
+        <div class="timer-section">
+            <div class="progress-ring-container">
+                <svg>
+                    <circle class="progress-bg" cx="100" cy="100" r="90"></circle>
+                    <circle class="progress-ring" cx="100" cy="100" r="90"></circle>
+                </svg>
+                <div class="time-display" id="timeDisplay">25:00</div>
+                <div class="phase-label" id="phaseLabel">work</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-primary" id="startBtn">Start</button>
+                <button class="btn-secondary" id="pauseBtn">Pause</button>
+                <button class="btn-secondary btn-small" id="resetBtn">Reset</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="sessionsToday">0</div>
+                <div class="stat-label">Sessions Today</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="timeTracked">0m</div>
+                <div class="stat-label">Time Tracked</div>
+            </div>
+        </div>
+
+        <div class="task-section">
+            <h2>Today's Tasks</h2>
+            <div class="task-input-container">
+                <input type="text" id="taskInput" placeholder="Add a new task...">
+                <button class="btn-primary btn-small" id="addTaskBtn">Add</button>
+            </div>
+            <div class="task-list scrollbar-hide" id="taskList">
+                <div class="empty-state">No tasks yet. Add one to get started!</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let workDuration = 25 * 60;
+        let breakDuration = 5 * 60;
+        let timeLeft = workDuration;
+        let isRunning = false;
+        let isWorkPhase = true;
+        let timerId = null;
+        let tasks = [];
+        let sessionsCompleted = 0;
+        let totalTimeTracked = 0;
+
+        // DOM elements
+        const timeDisplay = document.getElementById('timeDisplay');
+        const phaseLabel = document.getElementById('phaseLabel');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const taskInput = document.getElementById('taskInput');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const taskList = document.getElementById('taskList');
+        const sessionsToday = document.getElementById('sessionsToday');
+        const timeTracked = document.getElementById('timeTracked');
+        const progressRing = document.querySelector('.progress-ring');
+        const circumference = 2 * Math.PI * 90;
+
+        progressRing.style.strokeDasharray = circumference;
+
+        // Load from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('focusFlowState');
+            if (saved) {
+                const state = JSON.parse(saved);
+                tasks = state.tasks || [];
+                sessionsCompleted = state.sessionsCompleted || 0;
+                totalTimeTracked = state.totalTimeTracked || 0;
+            }
+            renderTasks();
+            updateStats();
+        }
+
+        // Save to localStorage
+        function saveState() {
+            localStorage.setItem('focusFlowState', JSON.stringify({
+                tasks,
+                sessionsCompleted,
+                totalTimeTracked
+            }));
+        }
+
+        // Update progress ring
+        function updateProgressRing() {
+            const currentDuration = isWorkPhase ? workDuration : breakDuration;
+            const progress = (currentDuration - timeLeft) / currentDuration;
+            const offset = circumference * (1 - progress);
+            progressRing.style.strokeDashoffset = offset;
+        }
+
+        // Update time display
+        function updateDisplay() {
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            timeDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            updateProgressRing();
+        }
+
+        // Start timer
+        function start() {
+            if (isRunning) return;
+            isRunning = true;
+            startBtn.textContent = 'Restart';
+            pauseBtn.textContent = 'Pause';
+
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+
+                if (timeLeft === 0) {
+                    completePhase();
+                }
+            }, 1000);
+        }
+
+        // Pause timer
+        function pause() {
+            if (!isRunning) return;
+            isRunning = false;
+            clearInterval(timerId);
+            pauseBtn.textContent = 'Resume';
+        }
+
+        // Reset timer
+        function reset() {
+            isRunning = false;
+            clearInterval(timerId);
+            timeLeft = isWorkPhase ? workDuration : breakDuration;
+            updateDisplay();
+            pauseBtn.textContent = 'Pause';
+            if (startBtn.textContent === 'Restart') startBtn.textContent = 'Start';
+        }
+
+        // Complete a phase
+        function completePhase() {
+            isRunning = false;
+            clearInterval(timerId);
+
+            if (isWorkPhase) {
+                sessionsCompleted++;
+                totalTimeTracked += workDuration / 60;
+                isWorkPhase = false;
+                timeLeft = breakDuration;
+                phaseLabel.textContent = 'break';
+                showNotification('Work session complete! Take a break.');
+            } else {
+                isWorkPhase = true;
+                timeLeft = workDuration;
+                phaseLabel.textContent = 'work';
+                showNotification('Break over! Ready for another session?');
+            }
+
+            updateDisplay();
+            updateStats();
+            saveState();
+            startBtn.textContent = 'Start';
+            pauseBtn.textContent = 'Pause';
+        }
+
+        // Add task
+        function addTask() {
+            const text = taskInput.value.trim();
+            if (!text) return;
+
+            tasks.push({
+                id: Date.now(),
+                text,
+                completed: false
+            });
+
+            taskInput.value = '';
+            renderTasks();
+            saveState();
+        }
+
+        // Toggle task
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                renderTasks();
+                saveState();
+            }
+        }
+
+        // Delete task
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            renderTasks();
+            saveState();
+        }
+
+        // Render tasks
+        function renderTasks() {
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<div class="empty-state">No tasks yet. Add one to get started!</div>';
+                return;
+            }
+
+            taskList.innerHTML = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''}
+                           onchange="toggleTask(${task.id})">
+                    <span class="task-text">${escapeHtml(task.text)}</span>
+                    <button class="btn-delete" onclick="deleteTask(${task.id})">×</button>
+                </div>
+            `).join('');
+        }
+
+        // Update stats
+        function updateStats() {
+            sessionsToday.textContent = sessionsCompleted;
+            const hours = Math.floor(totalTimeTracked / 60);
+            const mins = Math.floor(totalTimeTracked % 60);
+            timeTracked.textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        }
+
+        // Show notification
+        function showNotification(message) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Focus Flow', { body: message });
+            } else if ('Notification' in window && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', start);
+        pauseBtn.addEventListener('click', pause);
+        resetBtn.addEventListener('click', reset);
+        addTaskBtn.addEventListener('click', addTask);
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // Initialize
+        updateDisplay();
+        loadState();
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>
